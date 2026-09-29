@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>War Crime or Not</title>
+  <meta name="description" content="Head-to-head ranking of documented and alleged incidents in Gaza, followed by a test of how context changes the way people read BBC headlines.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>War Crime <span class="or">or</span> Not</h1>
+    <nav>
+      <button data-go="intro">Start</button>
+      <button data-go="results">Results</button>
+      <button data-go="method">Method</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 0. Intro -->
+    <section id="intro" class="stage">
+      <p class="warn"><strong>Content warning.</strong> Text descriptions of killings of children, medics and journalists, and of sexual violence. No images.</p>
+      <h2>Two cases. Which is worse?</h2>
+      <p>You will see pairs of incidents from Gaza since October 2023. For each pair, pick the one you judge more serious. Thousands of these small choices add up to a ranking, the same way chess ratings (Elo) come from individual games.</p>
+      <p>Every incident lists its sources and how solid the evidence is (<span class="badge documented">documented</span> <span class="badge reported">reported</span> <span class="badge alleged">alleged</span>), the official Israeli response where one exists, and what governments said.</p>
+      <p>Before and after the comparisons you will also be asked to rate a few BBC headlines. That part is an experiment, explained on the <a href="#" data-go="method">Method</a> page once you finish, so it doesn't influence your answers.</p>
+      <button class="primary" id="begin">Begin</button>
+    </section>
+
+    <!-- 1 & 3. Headline ratings -->
+    <section id="rate" class="stage" hidden>
+      <p class="step" id="rate-step"></p>
+      <article class="headline-card">
+        <p class="kicker">BBC News · <time id="h-date"></time></p>
+        <h2 id="h-text"></h2>
+      </article>
+      <fieldset>
+        <legend>How would you describe this headline?</legend>
+        <div class="scale" id="h-scale"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Anything specific? <span class="muted">(optional, pick any)</span></legend>
+        <div class="tags" id="h-tags"></div>
+      </fieldset>
+      <button class="primary" id="h-next" disabled>Next</button>
+    </section>
+
+    <!-- 2. Comparisons -->
+    <section id="compare" class="stage" hidden>
+      <p class="step" id="c-step"></p>
+      <h2 class="q">Which is more serious?</h2>
+      <div class="pair">
+        <div class="card" id="c-left"></div>
+        <div class="card" id="c-right"></div>
+      </div>
+      <div class="choices">
+        <button class="primary" data-pick="1">← This one</button>
+        <button data-pick="0.5">Can't separate them</button>
+        <button class="primary" data-pick="0">This one →</button>
+      </div>
+    </section>
+
+    <!-- 4. Results -->
+    <section id="results" class="stage" hidden>
+      <h2>Top 25</h2>
+      <p class="muted" id="r-meta"></p>
+      <ol class="leaderboard" id="r-top"></ol>
+
+      <h2>Headlines: before vs after context</h2>
+      <p class="muted">Average rating on a scale from −2 (strongly downplays) to +2 (strongly overstates). “Before” ratings come from people who hadn't yet seen any incidents; “after” from people who had just done the comparisons. Each person is randomly assigned which headlines they see before and which after.</p>
+      <table class="shift">
+        <thead><tr><th>Headline</th><th>Before</th><th>After</th><th>Shift</th></tr></thead>
+        <tbody id="r-shift"></tbody>
+      </table>
+      <button id="again">Do another round</button>
+    </section>
+
+    <!-- Method -->
+    <section id="method" class="stage prose" hidden>
+      <h2>Method</h2>
+      <h3>Ranking</h3>
+      <p>Each vote is one “game” between two incidents. Ratings are recalculated from the full vote log and averaged over 20 random orderings, so early and late voters count equally. Pairs are chosen to fill gaps: incidents with fewer votes, and close match-ups, come up more often.</p>
+      <p>The ranking measures <em>how serious participants judge each incident to be</em>. That is not a legal finding. Whether an act is a war crime is decided by courts applying the laws of war (distinction, proportionality, precaution, and specific offences like attacking medical units or using starvation as a weapon).</p>
+      <h3>The headline experiment</h3>
+      <p>Everyone rates the same set of BBC headlines, but a random half of the headlines is shown <strong>before</strong> the comparisons and the other half <strong>after</strong>. If reading documented detail changes how a headline looks, the before and after averages for that headline will differ.</p>
+      <p>What it can show: whether exposure to the incident record shifts judgements of the headline. What it can't show on its own: whether the shifted judgement is the correct one. The comparisons show the gravest material, so some shift is expected from priming alone. Read the result as “how the headline looks next to the record”, not as a verdict.</p>
+      <p>Headlines were picked because someone publicly criticised their framing, from either direction. Each one links to that criticism.</p>
+      <h3>Evidence labels</h3>
+      <ul>
+        <li><span class="badge documented">documented</span>: video, forensic or multiple independent investigations, or acknowledged by the Israeli military.</li>
+        <li><span class="badge reported">reported</span>: credible outlets or NGOs, not independently confirmed.</li>
+        <li><span class="badge alleged">alleged</span>: rests mainly on testimony.</li>
+      </ul>
+      <h3>Condemn-o-meter</h3>
+      <p>Scores the wording of official reactions from 1 (“concerned”) to 4 (“categorically condemns”). It measures words only, not what the government then did.</p>
+      <div id="bbc-context"></div>
+    </section>
+  </main>
+
+  <template id="card-tpl">
+    <div class="card-body">
+      <p class="kicker"><span class="badge"></span> <time></time> · <span class="place"></span></p>
+      <h3 class="title"></h3>
+      <p class="summary"></p>
+      <details class="official"><summary>Official Israeli response</summary><div></div></details>
+      <details class="reactions"><summary>International reactions</summary><ul></ul></details>
+      <details class="sources"><summary>Sources</summary><ul></ul></details>
+    </div>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

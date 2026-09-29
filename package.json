@@ -1,0 +1,1 @@
+{"name":"war-crime-or-not-a-war-crime","private":true,"type":"module","scripts":{"test":"node --test tests/*.mjs","serve":"npx --yes serve ."}}

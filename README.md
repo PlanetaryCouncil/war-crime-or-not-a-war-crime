@@ -1,0 +1,40 @@
+# War Crime or Not
+
+A public experiment in two parts.
+
+1. **Head-to-head ranking.** Participants see two incidents from Gaza (Oct 2023 onward) and pick the more serious one. The votes feed an Elo ranking ([`lib/elo.js`](lib/elo.js)), which produces a crowd-sourced Top 25. Each incident card shows its evidence status, sources, the official Israeli response and international reactions. The reactions are scored by the **Condemn-o-meter** ([`lib/condemn.js`](lib/condemn.js)), which runs from "concerned" to "categorically condemns".
+2. **Headline test.** Participants rate BBC headlines. Each person sees a random half of the headlines *before* the comparisons and the other half *after*. Comparing the two groups shows whether contact with the documented record changes how a headline reads.
+
+## Run it
+
+```sh
+npm run serve     # static site, any static host works (GitHub Pages, Netlify, Cloudflare Pages)
+npm test          # Elo engine tests
+```
+
+Votes stay in the visitor's browser unless you deploy the optional backend in [`worker/`](worker/README.md) and set `API_BASE` in `config.js`.
+
+## Reusing the Elo engine
+
+`lib/elo.js` has no dependencies and knows nothing about this project:
+
+```js
+import { EloPool, replay } from './lib/elo.js';
+
+const pool = new EloPool(['a', 'b', 'c']);
+pool.record('a', 'b', 1);          // a beat b (0 = b won, 0.5 = tie)
+const [x, y] = pool.nextPair();    // most informative next match-up
+pool.top(25);
+
+// Recommended for crowd votes: store the log, rebuild from it,
+// averaging over shuffled orders so vote timing doesn't matter.
+const ranked = replay(ids, votes, { shuffles: 20 });
+```
+
+## Data
+
+All incident, headline and context data is in [`data/dataset.js`](data/dataset.js). Rules for editing it:
+
+- Every claim has a source link. Quotes are verbatim or clearly marked as paraphrase.
+- `status` is `documented` (video, forensics, multiple independent investigations, or acknowledged by the IDF), `reported` (credible outlets or NGOs, not independently confirmed) or `alleged` (mainly testimony). A severe claim with weak evidence stays `alleged`. That protects the project: a single overstated item hands critics a reason to dismiss all the others.
+- Headlines are included because someone publicly criticised their framing, from either direction. Each one links to that criticism.
