@@ -38,3 +38,11 @@ All incident, headline and context data is in [`data/dataset.js`](data/dataset.j
 - Every claim has a source link. Quotes are verbatim or clearly marked as paraphrase.
 - `status` is `documented` (video, forensics, multiple independent investigations, or acknowledged by the IDF), `reported` (credible outlets or NGOs, not independently confirmed) or `alleged` (mainly testimony). A severe claim with weak evidence stays `alleged`. That protects the project: a single overstated item hands critics a reason to dismiss all the others.
 - Headlines are included because someone publicly criticised their framing, from either direction. Each one links to that criticism.
+
+## Before launch
+
+`data/dataset.js` was compiled from search-result extracts, because the research tooling couldn't open most source pages (including every BBC page). Until someone checks each item by hand, `SOURCES_CHECKED = false` and the site shows a "Draft, do not cite" banner. To clear it:
+
+1. Open every source link. Confirm each quote word for word and each headline exactly as the BBC published it, and add a bbc.co.uk URL where one exists.
+2. Resolve the open points in `researchNotes` at the bottom of the file, such as al-Nasr baby numbers and Hind Rajab's age.
+3. Set `SOURCES_CHECKED = true`.

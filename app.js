@@ -2,7 +2,7 @@ import { EloPool, replay, pairKey } from './lib/elo.js';
 import { condemnLevel, MAX_LEVEL } from './lib/condemn.js';
 import { makeStore } from './lib/store.js';
 import { API_BASE, COMPARISONS_PER_SESSION } from './config.js';
-import { incidents, headlines, bbcContext } from './data/dataset.js';
+import { incidents, headlines, bbcContext, SOURCES_CHECKED } from './data/dataset.js';
 
 const store = makeStore(API_BASE);
 const byId = new Map(incidents.map((x) => [x.id, x]));
@@ -122,11 +122,8 @@ function card(x) {
   const off = node.querySelector('.official');
   if (x.officialResponse) {
     const d = off.querySelector('div');
-    const p = el('p');
     const r = x.officialResponse;
-    p.textContent = r.verbatim ? `“${r.text}”` : r.text;
-    if (r.verbatim) p.className = 'verbatim';
-    d.append(p);
+    d.append(el('p', r.verbatim ? r.text : `Paraphrase: ${r.text}`));
     if (r.source) d.append(link(r.source));
   } else {
     off.querySelector('div').append(el('p', 'No official statement found. Know of one? Open an issue with a source.'));
@@ -180,10 +177,17 @@ async function renderResults() {
     const post = ratings.filter((r) => r.headline === h.id && r.phase === 'post').map((r) => r.score);
     const tr = el('tr');
     const td = el('td'); td.append(link({ label: h.headline, url: h.url }));
+    if (h.versionNote) { td.append(el('br')); td.append(el('small', h.versionNote)); }
     if (h.criticSource) { td.append(el('br')); const c = el('small'); c.append('Criticised: ', link(h.criticSource)); td.append(c); }
     tr.append(td, num(stat(pre)), num(stat(post)), num(pre.length && post.length ? signed(mean(post) - mean(pre)) : '—'));
     return tr;
   }));
+}
+
+if (!SOURCES_CHECKED) {
+  const b = el('p', 'Draft: quotes and headline wordings have not yet been checked against their source pages. Do not cite yet.');
+  b.className = 'warn draft';
+  document.querySelector('main').prepend(b);
 }
 
 // ---------- BBC context on Method page ----------
