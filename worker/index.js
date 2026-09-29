@@ -1,7 +1,7 @@
 // Shared vote log: Cloudflare Worker + D1. Append-only; ratings are computed client-side.
 // Deploy: see worker/README.md.
 
-const MAX_BODY = 2000;
+const MAX_BODY = 4000;
 const ID = /^[a-z0-9-]{1,80}$/;
 
 export default {
@@ -46,6 +46,16 @@ function validate(e) {
   if (e.type === 'rating' && ID.test(e.headline) && ['pre', 'post'].includes(e.phase) &&
       [-2, -1, 0, 1, 2].includes(e.score) && Array.isArray(e.tags) && e.tags.length <= 10) {
     return { type: 'rating', pid: e.pid, headline: e.headline, phase: e.phase, score: e.score, tags: e.tags.map(String).map((s) => s.slice(0, 60)) };
+  }
+  const it = e.item;
+  if (e.type === 'submit' && it && /^sub-[a-z0-9-]{1,40}$/.test(it.id) && /^\d{4}-\d{2}-\d{2}$/.test(it.date) &&
+      Array.isArray(it.sources) && it.sources.length >= 1 && it.sources.length <= 2 &&
+      it.sources.every((s) => /^https?:\/\//.test(s.url))) {
+    const str = (v, n) => String(v || '').slice(0, n);
+    return { type: 'submit', pid: e.pid, item: {
+      id: it.id, date: it.date, title: str(it.title, 100), place: str(it.place, 80), summary: str(it.summary, 600),
+      sources: it.sources.map((s) => ({ label: str(s.label, 80), url: str(s.url, 500) })),
+    } };
   }
   return null;
 }

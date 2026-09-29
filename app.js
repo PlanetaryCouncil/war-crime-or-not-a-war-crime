@@ -7,6 +7,9 @@ import { incidents, headlines, bbcContext, SOURCES_CHECKED } from './data/datase
 const store = makeStore(API_BASE);
 const byId = new Map(incidents.map((x) => [x.id, x]));
 const $ = (s) => document.querySelector(s);
+// ?n=5 shortens a session (used by the simulated visitor and for demos).
+const COMPARISONS = Number(new URLSearchParams(location.search).get('n')) || COMPARISONS_PER_SESSION;
+const NEW_FOR_MS = 7 * 24 * 3600 * 1000; // a submission counts as "new" for a week
 
 const SCALE = [
   { v: -2, label: 'Strongly downplays' },
@@ -56,7 +59,13 @@ $('#begin').addEventListener('click', async () => {
   session.pool = await livePool();
   nextHeadline();
 });
-$('#again').addEventListener('click', () => $('#begin').click());
+// Another round skips the headlines: each person rates them once, or the before/after split breaks.
+$('#again').addEventListener('click', async () => {
+  if (!session) return $('#begin').click();
+  session.pool = await livePool();
+  Object.assign(session, { phase: 'extra', compares: 0 });
+  nextPair();
+});
 
 // ---------- headline rating ----------
 let pick = null;
@@ -89,12 +98,13 @@ function nextHeadline() {
 // ---------- pairwise comparison ----------
 let current;
 function nextPair() {
-  if (session.compares >= COMPARISONS_PER_SESSION) {
+  if (session.compares >= COMPARISONS) {
+    if (session.phase === 'extra') return show('results');
     session.phase = 'post'; session.i = 0;
     return nextHeadline();
   }
   current = session.pool.nextPair({ recent: session.recent });
-  $('#c-step').textContent = `Comparison ${session.compares + 1} of ${COMPARISONS_PER_SESSION}`;
+  $('#c-step').textContent = `Comparison ${session.compares + 1} of ${COMPARISONS}`;
   $('#c-left').replaceChildren(card(byId.get(current[0])));
   $('#c-right').replaceChildren(card(byId.get(current[1])));
   show('compare');
@@ -114,10 +124,16 @@ function card(x) {
   const node = $('#card-tpl').content.cloneNode(true);
   const badge = node.querySelector('.badge');
   badge.textContent = x.status; badge.classList.add(x.status);
-  node.querySelector('time').textContent = fmtDate(x.date);
-  node.querySelector('.place').textContent = x.place;
+  node.querySelector('time').textContent = x.dateText || fmtDate(x.date);
+  node.querySelector('.place').textContent = x.place ? ` · ${x.place}` : '';
   node.querySelector('.title').textContent = x.title;
   node.querySelector('.summary').textContent = x.summary;
+
+  const notes = node.querySelector('.notes');
+  if (x.notes?.length || x.caveat) {
+    notes.querySelector('ul').append(...(x.notes || []).map((n) => el('li', n)));
+    if (x.caveat) notes.append(el('p', `What's disputed: ${x.caveat}`));
+  } else notes.remove();
 
   const off = node.querySelector('.official');
   if (x.officialResponse) {
@@ -149,8 +165,15 @@ function meter(level) {
 }
 
 // ---------- results ----------
+// Community submissions arrive as events and join the pool as 'submitted' (unverified).
+function mergeSubmissions(events) {
+  events.filter((e) => e.type === 'submit' && e.item && !byId.has(e.item.id))
+    .forEach((e) => byId.set(e.item.id, { ...e.item, status: 'submitted', submittedAt: e.t }));
+}
+
 async function livePool() {
   const events = await safeAll();
+  mergeSubmissions(events);
   const votes = events.filter((e) => e.type === 'vote' && byId.has(e.a) && byId.has(e.b));
   return votes.length ? replay([...byId.keys()], votes, { shuffles: 20 }) : new EloPool([...byId.keys()]);
 }
@@ -159,6 +182,18 @@ async function renderResults() {
   const events = await safeAll();
   const votes = events.filter((e) => e.type === 'vote');
   const pool = await livePool();
+  const ranked = pool.ranking();
+
+  // A fresh submission that climbs into the top 5 steals the headline.
+  const breaking = ranked.slice(0, 5).find((it) => isNew(byId.get(it.id)));
+  $('#breaking').hidden = !breaking;
+  if (breaking) {
+    const rank = ranked.indexOf(breaking) + 1;
+    const tag = el('span', 'NEW ENTRY'); tag.className = 'badge new';
+    $('#breaking').replaceChildren(tag, el('strong', ` Straight in at #${rank}: ${byId.get(breaking.id).title}`),
+      el('small', ` Submitted by a visitor, not yet verified. ${breaking.games} votes so far.`));
+  }
+
   const voters = new Set(events.map((e) => e.pid)).size;
   $('#r-meta').textContent = `${votes.length} votes from ${voters} participant${voters === 1 ? '' : 's'}` +
     (API_BASE ? '.' : ' (this browser only — see README to pool votes).');
@@ -168,6 +203,7 @@ async function renderResults() {
     const s = el('span', `${Math.round(it.rating)} · ${it.games} games`); s.className = 'score';
     const b = el('span', x.status); b.className = `badge ${x.status}`;
     li.append(s, el('strong', x.title + ' '), b);
+    if (isNew(x)) { const n = el('span', 'new'); n.className = 'badge new'; li.append(' ', n); }
     return li;
   }));
 
@@ -206,7 +242,28 @@ if (bbcContext?.length) {
   box.append(ul);
 }
 
+// ---------- submit a new incident ----------
+$('#s-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const f = new FormData(ev.target);
+  const urls = [f.get('url1'), f.get('url2')].filter(Boolean);
+  const item = {
+    id: 'sub-' + crypto.randomUUID().slice(0, 8),
+    title: String(f.get('title')).trim().slice(0, 100),
+    date: f.get('date'),
+    place: String(f.get('place')).trim().slice(0, 80),
+    summary: String(f.get('summary')).trim().slice(0, 600),
+    sources: urls.map((u) => ({ label: hostOf(u), url: u })),
+  };
+  await safeAdd({ type: 'submit', pid: session?.pid || crypto.randomUUID(), item });
+  byId.set(item.id, { ...item, status: 'submitted', submittedAt: Date.now() });
+  ev.target.reset();
+  $('#s-done').hidden = false;
+});
+
 // ---------- helpers ----------
+function isNew(x) { return x?.status === 'submitted' && Date.now() - (x.submittedAt || 0) < NEW_FOR_MS; }
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return 'source'; } }
 async function safeAdd(e) { try { await store.add(e); } catch (err) { console.warn(err); } }
 async function safeAll() { try { return await store.all(); } catch (err) { console.warn(err); return []; } }
 function el(tag, text) { const n = document.createElement(tag); if (text != null) n.textContent = text; return n; }

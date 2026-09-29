@@ -10,6 +10,9 @@ A public experiment in two parts.
 ```sh
 npm run serve     # static site, any static host works (GitHub Pages, Netlify, Cloudflare Pages)
 npm test          # Elo engine tests
+npm run e2e       # simulated visitor clicks through everything, records recordings/latest.mp4 (~12 s)
+npm run e2e -- --runs=10   # same, 10 randomised runs, fails on any error
+npm run build:data         # rebuild data/dataset.js from data/*.json
 ```
 
 Votes stay in the visitor's browser unless you deploy the optional backend in [`worker/`](worker/README.md) and set `API_BASE` in `config.js`.
@@ -33,7 +36,7 @@ const ranked = replay(ids, votes, { shuffles: 20 });
 
 ## Data
 
-All incident, headline and context data is in [`data/dataset.js`](data/dataset.js). Rules for editing it:
+Incidents come from [warcrimes.planetarycouncil.org](https://warcrimes.planetarycouncil.org/) (`data/planetarycouncil.json`, copied from the `PlanetaryCouncil/warcrimes` repo), plus a few extra incidents, government reactions, BBC headlines and BBC context in `data/research.json`. `tools/build-data.mjs` merges them into `data/dataset.js`; evidence labels for the Planetary Council entries are set in that script. Visitors can also submit new incidents, which join the vote as `submitted` (unverified); one that climbs into the top 5 within a week takes the headline on the results page. Rules for editing the data:
 
 - Every claim has a source link. Quotes are verbatim or clearly marked as paraphrase.
 - `status` is `documented` (video, forensics, multiple independent investigations, or acknowledged by the IDF), `reported` (credible outlets or NGOs, not independently confirmed) or `alleged` (mainly testimony). A severe claim with weak evidence stays `alleged`. That protects the project: a single overstated item hands critics a reason to dismiss all the others.

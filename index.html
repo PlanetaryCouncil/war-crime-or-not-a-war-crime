@@ -13,6 +13,7 @@
     <nav>
       <button data-go="intro">Start</button>
       <button data-go="results">Results</button>
+      <button data-go="submit">Submit</button>
       <button data-go="method">Method</button>
     </nav>
   </header>
@@ -63,6 +64,7 @@
 
     <!-- 4. Results -->
     <section id="results" class="stage" hidden>
+      <p class="breaking" id="breaking" hidden></p>
       <h2>Top 25</h2>
       <p class="muted" id="r-meta"></p>
       <ol class="leaderboard" id="r-top"></ol>
@@ -73,7 +75,25 @@
         <thead><tr><th>Headline</th><th>Before</th><th>After</th><th>Shift</th></tr></thead>
         <tbody id="r-shift"></tbody>
       </table>
-      <button id="again">Do another round</button>
+      <button id="again">Keep voting</button>
+    </section>
+
+    <!-- Submit -->
+    <section id="submit" class="stage" hidden>
+      <h2>Submit an incident</h2>
+      <p>New entries go straight into the comparisons, marked <span class="badge submitted">submitted</span> until someone checks the sources. A new entry that votes push into the top 5 takes the headline on the results page.</p>
+      <form id="s-form">
+        <label>What happened <span class="muted">(short title)</span><input name="title" required maxlength="100"></label>
+        <div class="row">
+          <label>Date<input name="date" type="date" required></label>
+          <label>Place<input name="place" required maxlength="80"></label>
+        </div>
+        <label>Summary <span class="muted">(facts only, say who reported what)</span><textarea name="summary" rows="4" required maxlength="600"></textarea></label>
+        <label>Source link<input name="url1" type="url" required placeholder="https://"></label>
+        <label>Second source <span class="muted">(optional)</span><input name="url2" type="url" placeholder="https://"></label>
+        <button class="primary" type="submit">Submit</button>
+        <p id="s-done" hidden>Thanks. It's in the pool now. <a href="#" data-go="intro">Start voting</a></p>
+      </form>
     </section>
 
     <!-- Method -->
@@ -100,9 +120,10 @@
 
   <template id="card-tpl">
     <div class="card-body">
-      <p class="kicker"><span class="badge"></span> <time></time> · <span class="place"></span></p>
+      <p class="kicker"><span class="badge"></span> <time></time><span class="place"></span></p>
       <h3 class="title"></h3>
       <p class="summary"></p>
+      <details class="notes"><summary>Key details</summary><ul></ul></details>
       <details class="official"><summary>Official Israeli response</summary><div></div></details>
       <details class="reactions"><summary>International reactions</summary><ul></ul></details>
       <details class="sources"><summary>Sources</summary><ul></ul></details>
